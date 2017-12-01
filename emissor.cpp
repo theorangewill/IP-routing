@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h> 
 #include <netinet/in.h>
@@ -46,7 +47,7 @@ struct ip_header {
   //unsigned int options[4];
 };
 
-void readInput(char* *argv, string *message)
+void readInput(char* *argv, string *message) 
 {
   server = argv[1];
   port = atoi(argv[2]);
@@ -59,9 +60,10 @@ void creatMessage(string *allMessage, string message)
 {
   ip_header header;
   if(message.size() >= 65535 - sizeof(header)){
-    perror("ERROR large message ");
+    perror("ERROR large message "); 
     exit(1);
   }
+
   header.version = 4;
   header.IHL = 5;
   header.precedence_DSCP = 0;
@@ -86,11 +88,11 @@ void creatMessage(string *allMessage, string message)
 
   struct in_addr ipv4;
   inet_aton(source.c_str(),&ipv4);
-  cout << ipv4.s_addr << endl; 
+  //cout << ipv4.s_addr << endl; 
   header.sourceIPAddress = htonl(ipv4.s_addr);
 
   inet_aton(destiny.c_str(),&ipv4);
-  cout << ipv4.s_addr << endl;
+  //cout << ipv4.s_addr << endl;
   header.destinationIPAddress = htonl(ipv4.s_addr);
 
  
@@ -130,17 +132,17 @@ void sendMessage(string message)
   }
   memset(destinySock.sin_zero,0x00,8);
   destinySockSize = sizeof(destinySock);
-
-  if(bind(sock, (struct sockaddr*) &destinySock, destinySockSize) == -1){
+/*
+  if(bind(sock, (struct sockaddr*) &destinySock, destinySockSize)<0){
     perror("ERROR bind ");
     exit(1);
   }
-  
-  if(sendto(sock,allMessage.c_str(),allMessage.size(),0,(struct sockaddr*)&destinySock, destinySockSize)==-1){
+  */
+  if(sendto(sock,allMessage.c_str(),allMessage.size(),0,(struct sockaddr*)&destinySock, destinySockSize)<0){
     perror("ERROR sendto ");
     exit(1);
   }
-  
+  close(sock);
 }
 
 int main(int argc, char* argv[])
@@ -151,7 +153,10 @@ int main(int argc, char* argv[])
     exit(1);
   }
   readInput(argv,&message);
+  while(1){
   sendMessage(message);
+  sleep(2);
+}
   //cout << server << ' ' << port << ' ' << source <<' ' << destiny << ' '<< message << endl;
   return 0;
 }

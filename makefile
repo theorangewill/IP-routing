@@ -1,14 +1,21 @@
 compile = g++
 
-program = emissor
+program1 = emissor.cpp
+program2 = roteador.cpp
 
-csources = $(program).cpp
+cppsources = $(wildcard *.cpp)
+cppobjects1 = $(program1:.cpp=)
+cppobjects2 = $(program2:.cpp=)
 
-cobjects = $(csources:.cpp=.o)
+all: #$(cppsources:.cpp=.o)
+	$(compile) -o $(cppobjects1) $(program1)
+	$(compile) -o $(cppobjects2) $(program2)
 
+#%.o: %.cpp
+#	$(compile) -o $@ $^
 
-$(program): $(cobjects)
-	$(compile) -std=c++11 -o $(program) $(cobjects)
+#$(cppobjects2): $(program2)
+#	$(compile) -o $@ $^
 
 clean:
 	rm *.o
