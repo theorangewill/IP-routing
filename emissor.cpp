@@ -153,10 +153,11 @@ int main(int argc, char* argv[])
     exit(1);
   }
   readInput(argv,&message);
-  while(1){
-  sendMessage(message);
-  sleep(2);
-}
+  //while(1){
+    sendMessage(message);
+    //cout << "oi" << endl;
+    //sleep(2);
+  //}
   //cout << server << ' ' << port << ' ' << source <<' ' << destiny << ' '<< message << endl;
   return 0;
 }

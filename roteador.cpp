@@ -14,7 +14,7 @@
 using namespace std;
 
 #define UDP 17
-#define SERVER "127.0.1.1"
+#define SERVER "127.0.0.1"
 
 struct ip_header {
   uint8_t IHL : 4;
@@ -218,7 +218,7 @@ void receiveMessage(string *message, ip_header *header)
 
 int toRoute(table route[], int size, unsigned int ipAddress)
 {
-  int i, h = 0, index = -1;
+  int i, h = 0, index = -1, defaultRoute = -1;
   for(i = 0; i< size; i++){
     if((route[i].destiny & route[i].mask) == (ipAddress & route[i].mask)){
       if(h < route[i].mask){
@@ -226,8 +226,11 @@ int toRoute(table route[], int size, unsigned int ipAddress)
         h = route[i].mask;
       }
     }
+    if(route[i].destiny == 0 && route[i].mask == 0){
+      defaultRoute = i;
+    }
   }
-  return index;
+  return (index != -1)? index : defaultRoute;
 }
 
 void sendMessage(string message, ip_header header, table route)
@@ -237,6 +240,7 @@ void sendMessage(string message, ip_header header, table route)
   struct sockaddr_in destinySock;
   //unsigned char *allMessage;
   string allMessage;
+  header.timeToLive = header.timeToLive - 1;
   allMessage.assign((const char*) &header, sizeof(header));
   allMessage.append(message);
   
@@ -272,27 +276,34 @@ int main(int argc, char* argv[])
   }
   table route[argc-2];
   string message;
-  unsigned char temp[4];
   int index;
   ip_header header;
   struct in_addr ipDestiny, ipSource;
 
   readInput(argc,argv,route);
-  receiveMessage(&message,&header);
-  temp = (unsigned char*) &(header.destinationIPAddress);
-  inet_aton(temp,&ipDestiny);
-  index = toRoute(route,argc-2,header.destinationIPAddress);
-  if(index < 0){
-    cout << " destination " << htonl(ipDestiny.s_addr) << "not found in routing table, dropping packet " << endl;
-  }
-  if(route[index].gateway == 0){
-    inet_aton((const char*)&(header.sourceIPAddress),&ipSource);
-    cout << "destination reached. From " << htonl(ipSource.s_addr) <<" to "<< htonl(ipDestiny.s_addr) <<" : " << message << endl;
-  }
-  else{
-    inet_aton((const char*)&(route[index].gateway),&ipSource);
-    cout << "forwarding packet for " << htonl(ipDestiny.s_addr) << " to next hop " << htonl(ipSource.s_addr) << " over interface " << route[index].interface << endl;
-    sendMessage(message,header,route[index]);
+  while(1){
+    receiveMessage(&message,&header);
+    ipDestiny.s_addr = htonl(header.destinationIPAddress);
+    index = toRoute(route,argc-2,header.destinationIPAddress);
+    if(index < 0){
+      cout << "destination " << inet_ntoa(ipDestiny) << " not found in routing table, dropping packet " << endl;
+    }
+    else if(route[index].gateway == 0){
+      //inet_aton((const char*)&(header.sourceIPAddress),&ipSource);
+      ipSource.s_addr = htonl(header.sourceIPAddress);
+      cout << "destination reached. From " << inet_ntoa(ipSource) <<" to ";
+      cout << inet_ntoa(ipDestiny) <<" : " << message << endl;
+    }
+    else if(header.timeToLive == 0){
+      cout << "dropping packet, time to live has expired " << endl;
+    }
+    else{
+      //inet_aton((const char*)&(route[index].gateway),&ipSource);
+      ipSource.s_addr = htonl(route[index].gateway);
+      cout << "forwarding packet for " << inet_ntoa(ipDestiny) << " to next hop ";
+      cout << inet_ntoa(ipSource) << " over interface " << route[index].interface << endl;
+      sendMessage(message,header,route[index]);
+    }
   }
   return 0;
 }
