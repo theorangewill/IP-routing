@@ -16,6 +16,7 @@ using namespace std;
 #define UDP 17
 #define SERVER "127.0.0.1"
 
+//Estrutura para armazenar o cabecalho do IP
 struct ip_header {
   uint8_t IHL : 4;
   uint8_t version : 4;
@@ -49,6 +50,7 @@ struct ip_header {
   //unsigned int options[4];
 };
 
+//Estrutura para armazenar a tabela de roteamento
 struct table {
   unsigned int destiny;
   unsigned int mask;
@@ -59,6 +61,7 @@ struct table {
 string source, destiny; 
 unsigned int port;
 
+//Converte a mascara tipo CIDR pra IP
 unsigned int CIDRtoIP(string temp)
 {
   int CIDR = atoi(temp.c_str());
@@ -74,6 +77,7 @@ unsigned int CIDRtoIP(string temp)
   return number;
 }
 
+//Le a entrada dada pelo usuario
 void readInput(int argc, char* *argv, table route[]) 
 {
   port = atoi(argv[1]);
@@ -107,11 +111,10 @@ void readInput(int argc, char* *argv, table route[])
 
     temp = line.substr(bar+1,line.find('/',bar+1)-bar-1);
     route[i].interface = atoi(temp.c_str());
-
-    //cout << bitset<32>(route[i].destiny) << ' ' << bitset<32>(route[i].mask) << ' ' << bitset<32>(route[i].gateway) << ' ' << route[i].interface << ' ' << endl;
   }
 }
 
+//Le a mensagem, verificando o cabecalho do ip recebido
 void readMessage(string *message, ip_header *header, unsigned char tempMessage[])
 {
   unsigned char byte;
@@ -170,6 +173,7 @@ void readMessage(string *message, ip_header *header, unsigned char tempMessage[]
   ss >> *message;
 }
 
+//Cria socket e ouve a mensagem
 void receiveMessage(string *message, ip_header *header)
 {
   int i, destinySockSize;
@@ -177,8 +181,6 @@ void receiveMessage(string *message, ip_header *header)
   struct sockaddr_in destinySock;
   unsigned char tempMessage[1048576];
 
-  //cout << "000000    '" << allMessage <<"'  >" << allMessage.size() <<endl;
-  
   //Criacao do socket
   sock = socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
   if(sock == -1){
@@ -201,12 +203,8 @@ void receiveMessage(string *message, ip_header *header)
     perror("ERROR bind ");
     exit(1);
   }
-  /*
-  if(sendto(sock,allMessage.c_str(),allMessage.size(),0,(struct sockaddr*)&destinySock, destinySockSize)<0){
-    perror("ERROR sendto ");
-    exit(1);
-  }*/
   
+  //Recebe a mensagem
   if(recvfrom(sock,(char*)(tempMessage),sizeof(tempMessage),0,(struct sockaddr*)&destinySock,(socklen_t*)&destinySockSize)<0){
     perror("ERROR recvfrom ");
     exit(1);
@@ -216,16 +214,19 @@ void receiveMessage(string *message, ip_header *header)
   readMessage(message,header,tempMessage);
 }
 
+//Verifica o caminho para se rotear a mensagem
 int toRoute(table route[], int size, unsigned int ipAddress)
 {
   int i, h = 0, index = -1, defaultRoute = -1;
   for(i = 0; i< size; i++){
+    //Verifica todas as linhas da tabela
     if((route[i].destiny & route[i].mask) == (ipAddress & route[i].mask)){
       if(h < route[i].mask){
         index = i;
         h = route[i].mask;
       }
     }
+    //Define a rota padrao
     if(route[i].destiny == 0 && route[i].mask == 0){
       defaultRoute = i;
     }
@@ -233,12 +234,12 @@ int toRoute(table route[], int size, unsigned int ipAddress)
   return (index != -1)? index : defaultRoute;
 }
 
+//Encaminha a mensagem recebida
 void sendMessage(string message, ip_header header, table route)
 {
   int i, destinySockSize;
   int sock;
   struct sockaddr_in destinySock;
-  //unsigned char *allMessage;
   string allMessage;
   header.timeToLive = header.timeToLive - 1;
   allMessage.assign((const char*) &header, sizeof(header));
@@ -261,6 +262,7 @@ void sendMessage(string message, ip_header header, table route)
   memset(destinySock.sin_zero,0x00,8);
   destinySockSize = sizeof(destinySock);
 
+  //Envia a mensagem
   if(sendto(sock,allMessage.c_str(),allMessage.size(),0,(struct sockaddr*)&destinySock, destinySockSize)<0){
     perror("ERROR sendto ");
     exit(1);
@@ -280,25 +282,32 @@ int main(int argc, char* argv[])
   ip_header header;
   struct in_addr ipDestiny, ipSource;
 
+  //Le a entrada do usuario
   readInput(argc,argv,route);
+  
   while(1){
+    //Recebe a mensagem
     receiveMessage(&message,&header);
     ipDestiny.s_addr = htonl(header.destinationIPAddress);
+    //Encontra o destino para enviar o pacote
     index = toRoute(route,argc-2,header.destinationIPAddress);
+
+    //Caso nao encontra um destino para encaminhar
     if(index < 0){
       cout << "destination " << inet_ntoa(ipDestiny) << " not found in routing table, dropping packet " << endl;
     }
+    //Caso o pacote esteja no destino
     else if(route[index].gateway == 0){
-      //inet_aton((const char*)&(header.sourceIPAddress),&ipSource);
       ipSource.s_addr = htonl(header.sourceIPAddress);
       cout << "destination reached. From " << inet_ntoa(ipSource) <<" to ";
       cout << inet_ntoa(ipDestiny) <<" : " << message << endl;
     }
+    //Caso o pacote ja tenha expirado seu tempo de vida
     else if(header.timeToLive == 0){
       cout << "dropping packet, time to live has expired " << endl;
     }
+    //Caso cotnrario, encaminha para o roteador compativel
     else{
-      //inet_aton((const char*)&(route[index].gateway),&ipSource);
       ipSource.s_addr = htonl(route[index].gateway);
       cout << "forwarding packet for " << inet_ntoa(ipDestiny) << " to next hop ";
       cout << inet_ntoa(ipSource) << " over interface " << route[index].interface << endl;

@@ -14,6 +14,7 @@ using namespace std;
 string server, source, destiny; 
 unsigned int port;
 
+//Estrutura que armazena o cabecalho IP
 struct ip_header {
   uint8_t IHL : 4;
   uint8_t version : 4;
@@ -47,6 +48,7 @@ struct ip_header {
   //unsigned int options[4];
 };
 
+//Le a entrada do usuario
 void readInput(char* *argv, string *message) 
 {
   server = argv[1];
@@ -56,6 +58,7 @@ void readInput(char* *argv, string *message)
   *message = argv[5];
 }
 
+//Monta a mensagem a ser enviada, cosntruindo o cabecalho IP
 void creatMessage(string *allMessage, string message)
 {
   ip_header header;
@@ -88,11 +91,9 @@ void creatMessage(string *allMessage, string message)
 
   struct in_addr ipv4;
   inet_aton(source.c_str(),&ipv4);
-  //cout << ipv4.s_addr << endl; 
   header.sourceIPAddress = htonl(ipv4.s_addr);
 
   inet_aton(destiny.c_str(),&ipv4);
-  //cout << ipv4.s_addr << endl;
   header.destinationIPAddress = htonl(ipv4.s_addr);
 
  
@@ -105,16 +106,15 @@ void creatMessage(string *allMessage, string message)
   //header.options[3] = 0;
 }
 
+//Envia a mensagem
 void sendMessage(string message)
 {
   int i, destinySockSize;
   int sock;
   struct sockaddr_in destinySock;
-  //unsigned char *allMessage;
   string allMessage;
   creatMessage(&allMessage, message);
 
-  //cout << "000000    '" << allMessage <<"'  >" << allMessage.size() <<endl;
   
   //Criacao do socket
   sock = socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
@@ -132,12 +132,8 @@ void sendMessage(string message)
   }
   memset(destinySock.sin_zero,0x00,8);
   destinySockSize = sizeof(destinySock);
-/*
-  if(bind(sock, (struct sockaddr*) &destinySock, destinySockSize)<0){
-    perror("ERROR bind ");
-    exit(1);
-  }
-  */
+
+  //Envia
   if(sendto(sock,allMessage.c_str(),allMessage.size(),0,(struct sockaddr*)&destinySock, destinySockSize)<0){
     perror("ERROR sendto ");
     exit(1);
@@ -152,12 +148,9 @@ int main(int argc, char* argv[])
     cout << "input: <net> <port> <source> <destiny> <message>" << endl;
     exit(1);
   }
+  //Le a entrada
   readInput(argv,&message);
-  //while(1){
-    sendMessage(message);
-    //cout << "oi" << endl;
-    //sleep(2);
-  //}
-  //cout << server << ' ' << port << ' ' << source <<' ' << destiny << ' '<< message << endl;
+  //Envia a mensagem
+  sendMessage(message);
   return 0;
 }
