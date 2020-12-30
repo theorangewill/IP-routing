@@ -13,7 +13,7 @@ The sender.cpp program is responsible for sending a message. Usage:
 ```
 
 ## router.cpp
-The router program is the simulation of a router. You should execute multiple instances of this program, simulating multiple routers. Usage:
+The router program is a simulation of a router. You must execute multiple instances of this program, simulating multiple routers. Usage:
 ```
 ./router <port> <table>
     <port> is the communication port the router is listening
