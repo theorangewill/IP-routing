@@ -14,7 +14,7 @@ using namespace std;
 string server, source, destiny; 
 unsigned int port;
 
-//Estrutura que armazena o cabecalho IP
+//IP header structure
 struct ip_header {
   uint8_t IHL : 4;
   uint8_t version : 4;
@@ -48,7 +48,7 @@ struct ip_header {
   //unsigned int options[4];
 };
 
-//Le a entrada do usuario
+//Reads the input
 void readInput(char* *argv, string *message) 
 {
   server = argv[1];
@@ -58,7 +58,7 @@ void readInput(char* *argv, string *message)
   *message = argv[5];
 }
 
-//Monta a mensagem a ser enviada, cosntruindo o cabecalho IP
+//Mount the message to send, building the IP header
 void creatMessage(string *allMessage, string message)
 {
   ip_header header;
@@ -106,7 +106,7 @@ void creatMessage(string *allMessage, string message)
   //header.options[3] = 0;
 }
 
-//Envia a mensagem
+//Sends the message
 void sendMessage(string message)
 {
   int i, destinySockSize;
@@ -114,16 +114,15 @@ void sendMessage(string message)
   struct sockaddr_in destinySock;
   string allMessage;
   creatMessage(&allMessage, message);
-
   
-  //Criacao do socket
+  //Creates the socket
   sock = socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
   if(sock == -1){
     perror("ERROR socket ");
     exit(1);
   }
 
-  //Inicializacao
+  //Inicialization
   destinySock.sin_family = AF_INET;
   destinySock.sin_port = htons(port);
   if(!inet_aton(server.c_str(),&(destinySock.sin_addr))){
@@ -133,7 +132,7 @@ void sendMessage(string message)
   memset(destinySock.sin_zero,0x00,8);
   destinySockSize = sizeof(destinySock);
 
-  //Envia
+  //Sends
   if(sendto(sock,allMessage.c_str(),allMessage.size(),0,(struct sockaddr*)&destinySock, destinySockSize)<0){
     perror("ERROR sendto ");
     exit(1);
@@ -148,9 +147,8 @@ int main(int argc, char* argv[])
     cout << "input: <net> <port> <source> <destiny> <message>" << endl;
     exit(1);
   }
-  //Le a entrada
+
   readInput(argv,&message);
-  //Envia a mensagem
   sendMessage(message);
   return 0;
 }

@@ -1,7 +1,7 @@
 compile = g++
 
-program1 = emissor.cpp
-program2 = roteador.cpp
+program1 = sender.cpp
+program2 = router.cpp
 
 cppsources = $(wildcard *.cpp)
 cppobjects1 = $(program1:.cpp=)
@@ -12,4 +12,4 @@ all:
 	$(compile) -o $(cppobjects2) $(program2)
 
 clean:
-	rm emissor roteador
+	rm sender router
