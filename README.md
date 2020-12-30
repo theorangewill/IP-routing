@@ -23,19 +23,8 @@ The router program is the simulation of a router. You should execute multiple in
 ## example
 Consider the following topology:
 
-```
-R1 ----- R2 ------ R3
-         |
-         |
-         R4 ------ R5
+![Alt text](img/topology.jpg)
 
-    IP/MASK/INTERFACE
-R1: 1.2.1.0/255.255.255.0/12341
-R2: 1.2.2.0/255.255.255.0/12342
-R3: 1.2.3.0/255.255.255.0/12343
-R4: 1.2.4.0/255.255.255.0/12344
-R5: 1.2.5.0/255.255.255.0/12345
-```
 For example, the routing table in R2 is:
 
 ```
