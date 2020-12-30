@@ -7,15 +7,9 @@ cppsources = $(wildcard *.cpp)
 cppobjects1 = $(program1:.cpp=)
 cppobjects2 = $(program2:.cpp=)
 
-all: #$(cppsources:.cpp=.o)
+all:
 	$(compile) -o $(cppobjects1) $(program1)
 	$(compile) -o $(cppobjects2) $(program2)
 
-#%.o: %.cpp
-#	$(compile) -o $@ $^
-
-#$(cppobjects2): $(program2)
-#	$(compile) -o $@ $^
-
 clean:
-	rm *.o
+	rm emissor roteador
